@@ -44,7 +44,9 @@ for engagement_record in daily_engagement:
     engagement_record['account_key'] = engagement_record['acct']
     engagement_record['utc_date'] = parse_maybe_date(engagement_record['utc_date'])
     engagement_record['total_minutes_visited'] = float(engagement_record['total_minutes_visited'])
+    engagement_record['lessons_completed'] = int(float(engagement_record['lessons_completed']))
     del[engagement_record['acct']]
+print('daily_engagement~~~~~~~~~~', daily_engagement[0])
 
 # 获取去重后的学员数
 def get_unique_students(data):
@@ -133,41 +135,78 @@ print('len(paid_enrollments)', len(paid_enrollments))
 print('len(paid_submissions)', len(paid_submissions))
 print('len(paid_engagement_in_first_week)', len(paid_engagement_in_first_week))
 
-# ** 将提交记录按照学号进行分组，计算平均学习时间、最大值、最小值、标准差
-engagement_by_account = defaultdict(list)
-for engagement_record in paid_engagement_in_first_week:
-    account_key = engagement_record['account_key']
-    engagement_by_account[account_key].append(engagement_record)
-# print('engagement_by_account', len(engagement_by_account))
+# 分组数据 
+def group_data(data, key_name):
+    grouped_data = defaultdict(list)
+    for point_data in data:
+        key = point_data[key_name]
+        grouped_data[key].append(point_data)
+    return grouped_data
 
-total_minutes_by_account = {}
-for account_key, engagement_for_student in engagement_by_account.items():
-    minutes = 0
-    for engagement_record in engagement_for_student:
-        minutes += engagement_record['total_minutes_visited']
-    total_minutes_by_account[account_key] = minutes
+# 分组数据按某维度汇总
+def sum_grouped_items(grouped_data, field_name):
+    sum_data = {}
+    for key, data_points  in grouped_data.items():
+        total = 0
+        for data_point in data_points:
+            total += data_point[field_name]
+        sum_data[key] = total
+    return sum_data
 
-# print('total_minutes_by_account', total_minutes_by_account)
+# 输出分组数据的描述
+def describe_data(data):
+    print('Mean:', np.mean(data))
+    print('Standard deviation:', np.std(data))
+    print('Minimum:', np.min(data))
+    print('Maximum:', np.max(data))
+
+# 针对提交记录表，计算学生第一周的平均学习时间、最大值、最小值、标准差
+engagement_by_account = group_data(paid_engagement_in_first_week, 'account_key')
+total_minutes_by_account = sum_grouped_items(engagement_by_account, 'total_minutes_visited')
 
 total_minutes = list(total_minutes_by_account.values())
-X = np.array([1.222,2.222,3,4,5])
+describe_data(total_minutes)
 
-print('学习平均分钟数', np.mean(total_minutes))
-print('学习最多分钟数', np.max(total_minutes))
-print('学习最小分钟数', np.min(total_minutes))
-print('标准差', np.std(total_minutes))
+# 完成课程数
+lessons_completed_by_account = sum_grouped_items(engagement_by_account, 'lessons_completed')
+describe_data(list(lessons_completed_by_account.values()))
+
+
+
+# engagement_by_account = defaultdict(list)
+# for engagement_record in paid_engagement_in_first_week:
+#     account_key = engagement_record['account_key']
+#     engagement_by_account[account_key].append(engagement_record)
+# # print('engagement_by_account', len(engagement_by_account))
+
+# total_minutes_by_account = {}
+# for account_key, engagement_for_student in engagement_by_account.items():
+#     minutes = 0
+#     for engagement_record in engagement_for_student:
+#         minutes += engagement_record['total_minutes_visited']
+#     total_minutes_by_account[account_key] = minutes
+
+# # print('total_minutes_by_account', total_minutes_by_account)
+
+# total_minutes = list(total_minutes_by_account.values())
+# X = np.array([1.222,2.222,3,4,5])
+
+# print('学习平均分钟数', np.mean(total_minutes))
+# print('学习最多分钟数', np.max(total_minutes))
+# print('学习最小分钟数', np.min(total_minutes))
+# print('标准差', np.std(total_minutes))
 
 # 获取每个学生学习的课程数
-total_courses_by_account = {}
-for account_key, engagement_for_student in engagement_by_account.items():
-    course = 0
-    for engagement_record in engagement_for_student:
-        course = len(set(engagement_record['num_courses_visited']))
-    total_courses_by_account[account_key] = course
+# total_courses_by_account = {}
+# for account_key, engagement_for_student in engagement_by_account.items():
+#     course = 0
+#     for engagement_record in engagement_for_student:
+#         course = len(set(engagement_record['num_courses_visited']))
+#     total_courses_by_account[account_key] = course
 
-total_courses = list(total_courses_by_account.values())
-# print('学习平total_courses均课程数', total_courses)
-print('学习平均课程数', np.mean(total_courses))
-print('学习最多课程数', np.max(total_courses))
-print('学习最少', np.min(total_courses))
-print('标准差', np.std(total_courses))
+# total_courses = list(total_courses_by_account.values())
+# # print('学习平total_courses均课程数', total_courses)
+# print('学习平均课程数', np.mean(total_courses))
+# print('学习最多课程数', np.max(total_courses))
+# print('学习最少', np.min(total_courses))
+# print('标准差', np.std(total_courses))
